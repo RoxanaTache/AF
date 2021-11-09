@@ -1,0 +1,5 @@
+O clasă cu metode utile pentru grafuri precum:
+    - parcurgeri BFS, DFS
+    - aflarea componentelor: conexe, biconexe și tare conexe
+    - aflarea muchiilor critice
+    - realizarea sortării topologice
