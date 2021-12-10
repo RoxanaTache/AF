@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -6,7 +7,7 @@
 #include <tuple>
 #include <queue>
 #include <list>
-#include <algorithm>
+
 using namespace std;
 
 class Graph {
@@ -48,29 +49,11 @@ public:
     int diameter();
     void insertEdge(int node1, int node2, int cost, bool oriented = true);
     bool hasPath(int current, int target);
-};
+    vector<vector<int>> costMatrix();
+    vector<vector<int>> royfloyd();
 
-int main() {
-    ifstream in("dijkstra.in");
-    ofstream out("dijkstra.out");
-    vector<tuple<int, int, int>> data;
-    int nrNodes, nrEdges;
-    in >> nrNodes >> nrEdges;
-    for(int i = 0; i < nrEdges; i++) {
-        int aux1, aux2, cost;
-        in >> aux1 >> aux2 >> cost;
-        data.emplace_back(aux1 - 1, aux2 - 1, cost);
-    }
-    Graph g(data, nrNodes, true);
-    auto dijks = g.dijkstra(0);
-    for(int i = 1; i < dijks.size(); i++) {
-        if(dijks[i] == -1)
-            out << "0 ";
-        else
-            out << dijks[i] << " ";
-    }
-    return 0;
-}
+    int maxFlux(int nodeSource, int nodeDest);
+};
 
 Graph :: Graph(vector<tuple<int, int, int>> &data, int &nrNodes, bool oriented) {
     adjacent.resize(nrNodes);
@@ -316,14 +299,10 @@ bool Graph :: havelHakimi(deque<int> degrees) {
         if(i >= degrees.size())
             return 0;
     }
-    if(sum % 2)
-        return 0;
-    int nrNodes = degrees.size();
     while(1) {
         sort(degrees.begin(), degrees.end(),greater<>());
         if(degrees[0] == 0)
             return 1;
-        const int currentDegree = degrees[0];
         degrees.pop_front();
         for(int i = 0; i < degrees.size(); i++) {
             degrees[i]--;
@@ -331,4 +310,49 @@ bool Graph :: havelHakimi(deque<int> degrees) {
                 return 0;
         }
     }
+}
+vector<vector<int>> Graph::costMatrix() {
+    vector<vector<int>> matrix;
+    for(int i = 0; i < adjacent.size(); i++) {
+        vector<int> line(adjacent.size());
+        for(auto edge: adjacent[i])
+            line[edge.node2] = edge.cost;
+        matrix.push_back(line);
+    }
+    return matrix;
+}
+vector<vector<int>> Graph::royfloyd() {
+    vector<vector<int>> matrix = costMatrix();
+    for(int i = 0; i < adjacent.size(); i++)
+        for(int j = 0; j < adjacent.size(); j++)
+            for(int k = 0; k < adjacent.size(); k++)
+                if (matrix[k][i]                                    // exista drum intre i si k
+                    && matrix[i][j]                                 // exista drum intre i si j
+                    && (matrix[k][j] > matrix[k][i] + matrix[i][j]  // daca drumul direct intre k si j este mai lung decat drumul ocolitor (prin i)
+                        || !matrix[k][j]) && k != j)                //      sau nu exista deja drum
+                    matrix[k][j] = matrix[k][i] + matrix[i][j];     // cel mai mic drum intre k si j devine k - i - j
+    return matrix;
+}
+
+int main() {
+    ifstream in("royfloyd.in");
+    ofstream out("royfloyd.out");
+    vector<tuple<int, int, int>> data;
+    int nrNodes;
+    in >> nrNodes;
+    for(int i = 0; i < nrNodes; i++) {
+        for(int j = 0; j < nrNodes; j++) {
+            int cost;
+            in >> cost;
+            if(cost)
+                data.emplace_back(i, j, cost);
+        }
+    }
+    Graph g(data, nrNodes, true);
+    for(auto line: g.royfloyd()) {
+        for(int x: line)
+            out << x << " ";
+        out << "\n";
+    }
+    return 0;
 }
