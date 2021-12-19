@@ -7,9 +7,9 @@
 #include <tuple>
 #include <queue>
 #include <list>
-
+ 
 using namespace std;
-
+ 
 class Graph {
     struct nodeStruct {
         int node1, node2, cost;
@@ -51,10 +51,14 @@ public:
     bool hasPath(int current, int target);
     vector<vector<int>> costMatrix();
     vector<vector<int>> royfloyd();
-
-    int maxFlux(int nodeSource, int nodeDest);
+    int hamilton();
+    int getCost(int src, int dest) {
+        for(auto i: adjacent[src])
+            if(i.node2 == dest)
+                return i.cost;
+    }
 };
-
+ 
 Graph :: Graph(vector<tuple<int, int, int>> &data, int &nrNodes, bool oriented) {
     adjacent.resize(nrNodes);
     for(auto[node1, node2, cost]: data) {
@@ -333,26 +337,41 @@ vector<vector<int>> Graph::royfloyd() {
                     matrix[k][j] = matrix[k][i] + matrix[i][j];     // cel mai mic drum intre k si j devine k - i - j
     return matrix;
 }
-
-int main() {
-    ifstream in("royfloyd.in");
-    ofstream out("royfloyd.out");
-    vector<tuple<int, int, int>> data;
-    int nrNodes;
-    in >> nrNodes;
-    for(int i = 0; i < nrNodes; i++) {
-        for(int j = 0; j < nrNodes; j++) {
-            int cost;
-            in >> cost;
-            if(cost)
-                data.emplace_back(i, j, cost);
+int Graph :: hamilton() {
+    vector<int> perm;
+    vector<long long> mins;
+    for(int i = 0; i < adjacent.size(); i++)
+        perm.push_back(i);
+    while(next_permutation(perm.begin(), perm.end())) {
+        long long s = 0;
+        int ok = 1;
+        for(int i = 0; i < perm.size() - 1; i++)
+            if(!hasPath(perm[i], perm[i + 1])) {
+                ok = 0;
+                break;
+            }
+        if(!hasPath(perm[perm.size() - 1], perm[0]))
+            ok = 0;
+        if(ok) {
+            for(int i = 0; i < perm.size() - 1; i++)
+                s += getCost(perm[i], perm[i + 1]);
+            s += getCost(perm[perm.size() - 1], perm[0]);
+            mins.push_back(s);
         }
     }
-    Graph g(data, nrNodes, true);
-    for(auto line: g.royfloyd()) {
-        for(int x: line)
-            out << x << " ";
-        out << "\n";
+    long long min;
+    if(!mins.empty()) {
+        min = mins[0];
+        for(auto i: mins)
+            if(min > i)
+                min = i;
     }
+    else
+        min = -1;
+    return min;
+}
+ 
+int main() {
+
     return 0;
 }
